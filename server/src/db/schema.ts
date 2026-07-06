@@ -1,5 +1,5 @@
 import { relations, sql } from "drizzle-orm";
-import { integer, sqliteTable, text, unique } from "drizzle-orm/sqlite-core";
+import { integer, sqliteTable, text, unique, index } from "drizzle-orm/sqlite-core";
 
 const created_at = integer("created_at", { mode: 'timestamp' }).default(sql`(unixepoch())`).notNull();
 const updated_at = integer("updated_at", { mode: 'timestamp' }).default(sql`(unixepoch())`).notNull();
@@ -19,7 +19,11 @@ export const feeds = sqliteTable("feeds", {
     uid: integer("uid").references(() => users.id).notNull(),
     createdAt: created_at,
     updatedAt: updated_at,
-});
+}, (table) => ({
+    createdAtIndex: index("feed_created_at_idx").on(table.createdAt),
+    draftListedIndex: index("feed_draft_listed_idx").on(table.draft, table.listed),
+    aliasIndex: index("feed_alias_idx").on(table.alias)
+}));
 
 export const moments = sqliteTable("moments", {
     id: integer("id").primaryKey(),
@@ -27,7 +31,9 @@ export const moments = sqliteTable("moments", {
     uid: integer("uid").references(() => users.id).notNull(),
     createdAt: created_at,
     updatedAt: updated_at
-});
+}, (table) => ({
+    createdAtIndex: index("moment_created_at_idx").on(table.createdAt)
+}));
 
 export const visits = sqliteTable("visits", {
     id: integer("id").primaryKey(),
