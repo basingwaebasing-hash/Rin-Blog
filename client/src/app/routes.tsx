@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { useContext } from "react";
+import { useContext, lazy, Suspense } from "react";
 import type { DefaultParams, PathPattern } from "wouter";
 import { Route, Switch } from "wouter";
 import { AdminLayout } from "../components/admin-layout";
@@ -11,22 +11,23 @@ import { Tips, TipsPage } from "../components/tips";
 import useTableOfContents from "../hooks/useTableOfContents";
 import { useSiteConfig } from "../hooks/useSiteConfig";
 import { CallbackPage } from "../page/callback";
-import { CompatTasksPage } from "../page/compat-tasks";
 import { ErrorPage } from "../page/error";
 import { FeedPage, TOCHeader } from "../page/feed";
 import { FeedsPage } from "../page/feeds";
 import { FriendsPage } from "../page/friends";
-import { HealthPage } from "../page/health";
 import { HashtagPage } from "../page/hashtag";
 import { HashtagsPage } from "../page/hashtags";
 import { LoginPage } from "../page/login";
 import { MomentsPage } from "../page/moments";
 import { ProfilePage } from "../page/profile";
-import { QueueStatusPage } from "../page/queue-status";
 import { SearchPage } from "../page/search";
-import { Settings } from "../page/settings";
 import { TimelinePage } from "../page/timeline";
-import { WritingPage } from "../page/writing";
+
+const CompatTasksPage = lazy(() => import("../page/compat-tasks").then(m => ({ default: m.CompatTasksPage })));
+const HealthPage = lazy(() => import("../page/health").then(m => ({ default: m.HealthPage })));
+const QueueStatusPage = lazy(() => import("../page/queue-status").then(m => ({ default: m.QueueStatusPage })));
+const Settings = lazy(() => import("../page/settings").then(m => ({ default: m.Settings })));
+const WritingPage = lazy(() => import("../page/writing").then(m => ({ default: m.WritingPage })));
 import { ProfileContext } from "../state/profile";
 import { tryInt } from "../utils/int";
 import { useTranslation } from "react-i18next";
@@ -161,7 +162,13 @@ function AppRoute({
 
         return layoutDefinition.renderRouteShell({
           header: <Header>{headerComponent}</Header>,
-          content: <Padding className={paddingClassName}>{resolvedContent}</Padding>,
+          content: (
+            <Padding className={paddingClassName}>
+              <Suspense fallback={<div className="flex justify-center p-8">Loading...</div>}>
+                {resolvedContent}
+              </Suspense>
+            </Padding>
+          ),
           footer: <Footer />,
           paddingClassName,
         });
@@ -192,7 +199,9 @@ function AdminRoute({
     <Route path={path}>
       {(params) => (
         <AdminLayout title={title} description={description}>
-          {typeof content === "function" ? content(params) : content}
+          <Suspense fallback={<div className="flex justify-center p-8">Loading...</div>}>
+            {typeof content === "function" ? content(params) : content}
+          </Suspense>
         </AdminLayout>
       )}
     </Route>
